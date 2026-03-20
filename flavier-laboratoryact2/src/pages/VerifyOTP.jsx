@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -9,15 +9,9 @@ function VerifyOTP() {
   const location = useLocation();
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
+  const [timeLeft, setTimeLeft] = useState(300);
   const { userId, username, method } = location.state || {};
-  
-  // Google Auth Setup States
-  const [showGoogleSetup, setShowGoogleSetup] = useState(false);
-  const [qrCode, setQrCode] = useState('');
-  const [setupToken, setSetupToken] = useState('');
-  const [isSettingUp, setIsSettingUp] = useState(false);
-  const [isVerifyingSetup, setIsVerifyingSetup] = useState(false);
+  const autoVerifyTimeoutRef = useRef(null);
 
   const swalConfig = {
     success: {
@@ -29,13 +23,6 @@ function VerifyOTP() {
       timer: 3000,
       timerProgressBar: true,
       showConfirmButton: true,
-      customClass: {
-        popup: 'swal-custom-popup',
-        title: 'swal-custom-title',
-        htmlContainer: 'swal-custom-text',
-        confirmButton: 'swal-custom-button',
-        timerProgressBar: 'swal-custom-progress'
-      }
     },
     error: {
       icon: 'error',
@@ -43,69 +30,40 @@ function VerifyOTP() {
       color: '#1e293b',
       confirmButtonColor: '#ef4444',
       confirmButtonText: 'Try Again',
-      customClass: {
-        popup: 'swal-custom-popup',
-        title: 'swal-custom-title',
-        htmlContainer: 'swal-custom-text',
-        confirmButton: 'swal-custom-button-error'
-      }
+    },
+    warning: {
+      icon: 'warning',
+      background: '#ffffff',
+      color: '#1e293b',
+      confirmButtonColor: '#f59e0b',
+      confirmButtonText: 'OK',
     },
     loading: {
       title: 'Processing...',
       allowOutsideClick: false,
       showConfirmButton: false,
       background: '#ffffff',
-      color: '#1e293b',
-      customClass: {
-        popup: 'swal-custom-popup',
-        title: 'swal-custom-title',
-        htmlContainer: 'swal-custom-text'
-      },
       didOpen: () => {
         Swal.showLoading();
-      }
-    },
-    info: {
-      icon: 'info',
-      background: '#ffffff',
-      color: '#1e293b',
-      confirmButtonColor: '#667eea',
-      confirmButtonText: 'OK',
-      customClass: {
-        popup: 'swal-custom-popup',
-        title: 'swal-custom-title',
-        htmlContainer: 'swal-custom-text',
-        confirmButton: 'swal-custom-button-info'
       }
     }
   };
 
-  const checkGoogleAuthStatus = useCallback(async () => {
-    try {
-      const response = await axios.get(`http://localhost:5000/google-auth-status/${userId}`);
-      if (!response.data.enabled) {
-        // User needs to set up Google Auth first
-        setShowGoogleSetup(true);
-      }
-    } catch (error) {
-      console.error("Error checking Google Auth status:", error);
-    }
-  }, [userId]);
-
-  // Handle redirect if no state
   useEffect(() => {
     if (!userId || !username || !method) {
       navigate("/");
       return;
     }
+    console.log("VerifyOTP mounted with:", { userId, username, method });
+    
+    // Clear any existing timeout on unmount
+    return () => {
+      if (autoVerifyTimeoutRef.current) {
+        clearTimeout(autoVerifyTimeoutRef.current);
+      }
+    };
+  }, [userId, username, method, navigate]);
 
-    // Check if Google Auth is enabled for this user
-    if (method === 'google') {
-      checkGoogleAuthStatus();
-    }
-  }, [userId, username, method, navigate, checkGoogleAuthStatus]);
-
-  // Timer countdown for email OTP only
   useEffect(() => {
     if (method !== 'email') return;
     if (timeLeft <= 0) return;
@@ -124,8 +82,11 @@ function VerifyOTP() {
   };
 
   const handleVerifyOTP = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
 
+    // Validate OTP
     if (!otp || otp.length !== 6) {
       Swal.fire({
         ...swalConfig.error,
@@ -135,7 +96,12 @@ function VerifyOTP() {
       return;
     }
 
+    // Prevent multiple submissions
+    if (isLoading) return;
+
     setIsLoading(true);
+    
+    // Show loading indicator
     Swal.fire({
       ...swalConfig.loading,
       title: 'Verifying...',
@@ -143,168 +109,98 @@ function VerifyOTP() {
     });
 
     try {
-      // Pass the method to the backend
+      console.log(`Sending verification for userId: ${userId}, method: ${method}, otp: ${otp}`);
+      
       const res = await axios.post("http://localhost:5000/verify-otp", {
         userId,
-        otp,
-        method // Important: Pass the method
+        otp: otp.toString().trim(),
+        method
       });
 
+      console.log("Verification response:", res.data);
+
       if (res.data.verified) {
+        Swal.close();
         Swal.fire({
           ...swalConfig.success,
           title: 'Success!',
-          text: 'Verification successful! Welcome back!',
+          text: 'Verification successful! Welcome to NewJeans!',
           timer: 2000,
           showConfirmButton: false
         }).then(() => {
-          navigate("/dashboard", { state: { username, userId } });
+          navigate("/home", { state: { username, userId } });
         });
       } else {
         throw new Error("Verification failed");
       }
     } catch (err) {
-      Swal.fire({
-        ...swalConfig.error,
-        title: 'Verification Failed',
-        text: err.response?.data?.message || 'Invalid or expired code. Please try again!'
-      });
-      setOtp("");
+      Swal.close();
+      console.error("Verification error:", err.response?.data || err.message);
+      
+      const errorMsg = err.response?.data?.message || 'Invalid or expired code. Please try again!';
+      const needsSetup = err.response?.data?.needsSetup;
+      const code = err.response?.data?.code;
+      
+      if (needsSetup) {
+        Swal.fire({
+          ...swalConfig.warning,
+          title: 'Setup Required',
+          text: 'Google Authenticator not set up. Would you like to set it up now?',
+          confirmButtonText: 'Setup Now',
+          showCancelButton: true,
+          cancelButtonText: 'Try Email',
+          cancelButtonColor: '#6b7280'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            navigate("/setup-google-auth", { state: { userId, username } });
+          } else {
+            navigate("/otp-method", { state: { userId, username } });
+          }
+        });
+      } else if (code === 'INVALID') {
+        Swal.fire({
+          ...swalConfig.error,
+          title: 'Invalid Code',
+          text: errorMsg,
+          confirmButtonText: 'Try Again'
+        });
+        setOtp("");
+      } else if (code === 'EXPIRED') {
+        Swal.fire({
+          ...swalConfig.error,
+          title: 'Code Expired',
+          text: errorMsg,
+          confirmButtonText: 'Request New Code'
+        }).then(() => {
+          if (method === 'email') {
+            handleResendOTP();
+          } else {
+            navigate("/otp-method", { state: { userId, username } });
+          }
+        });
+      } else {
+        Swal.fire({
+          ...swalConfig.error,
+          title: 'Verification Failed',
+          text: errorMsg
+        });
+        setOtp("");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSetupGoogleAuth = async () => {
-    setIsSettingUp(true);
-    Swal.fire({
-      ...swalConfig.loading,
-      title: 'Setting up Google Auth...',
-      text: 'Generating QR code'
-    });
-
-    try {
-      const response = await axios.post("http://localhost:5000/setup-google-auth", { userId });
-      setQrCode(response.data.qrCode);
-      setShowGoogleSetup(true);
-      Swal.close();
-    } catch (err) {
-      Swal.fire({
-        ...swalConfig.error,
-        title: 'Setup Failed',
-        text: err.response?.data?.message || 'Failed to setup Google Authenticator'
-      });
-    } finally {
-      setIsSettingUp(false);
-    }
-  };
-
-  const handleVerifyAndEnableGoogleAuth = async () => {
-    if (!setupToken || setupToken.length !== 6) {
-      Swal.fire({
-        ...swalConfig.error,
-        title: 'Invalid Code',
-        text: 'Please enter a valid 6-digit code from Google Authenticator'
-      });
-      return;
-    }
-
-    setIsVerifyingSetup(true);
-    Swal.fire({
-      ...swalConfig.loading,
-      title: 'Verifying...',
-      text: 'Please wait while we verify your code'
-    });
-
-    try {
-      const response = await axios.post("http://localhost:5000/verify-and-enable-google-auth", {
-        userId,
-        token: setupToken
-      });
-
-      if (response.data.enabled) {
-        Swal.fire({
-          ...swalConfig.success,
-          title: 'Success!',
-          text: 'Google Authenticator enabled successfully!',
-          timer: 2000,
-          showConfirmButton: false
-        }).then(() => {
-          setShowGoogleSetup(false);
-          setSetupToken('');
-          // Now proceed to verify with the code
-          handleVerifyWithGoogleCode();
-        });
-      }
-    } catch (err) {
-      Swal.fire({
-        ...swalConfig.error,
-        title: 'Verification Failed',
-        text: err.response?.data?.message || 'Invalid code. Please try again!'
-      });
-    } finally {
-      setIsVerifyingSetup(false);
-    }
-  };
-
-  const handleVerifyWithGoogleCode = () => {
-    // After enabling, ask user to enter the code for verification
-    Swal.fire({
-      title: 'Enter Code',
-      text: 'Please enter the 6-digit code from Google Authenticator to complete login',
-      input: 'text',
-      inputAttributes: {
-        maxlength: 6,
-        pattern: '[0-9]{6}',
-        inputmode: 'numeric'
-      },
-      showCancelButton: true,
-      confirmButtonText: 'Verify',
-      cancelButtonText: 'Cancel',
-      preConfirm: async (code) => {
-        if (!code || code.length !== 6) {
-          Swal.showValidationMessage('Please enter a 6-digit code');
-          return false;
-        }
-        return code;
-      }
-    }).then(async (result) => {
-      if (result.isConfirmed && result.value) {
-        setIsLoading(true);
-        try {
-          const res = await axios.post("http://localhost:5000/verify-otp", {
-            userId,
-            otp: result.value,
-            method: 'google'
-          });
-          
-          if (res.data.verified) {
-            Swal.fire({
-              ...swalConfig.success,
-              title: 'Success!',
-              text: 'Verification successful! Welcome back!',
-              timer: 2000,
-              showConfirmButton: false
-            }).then(() => {
-              navigate("/dashboard", { state: { username, userId } });
-            });
-          }
-        } catch (err) {
-          Swal.fire({
-            ...swalConfig.error,
-            title: 'Verification Failed',
-            text: err.response?.data?.message || 'Invalid code. Please try again!'
-          });
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    });
+  const handleSetupGoogleAuth = () => {
+    navigate("/setup-google-auth", { state: { userId, username } });
   };
 
   const handleResendOTP = async () => {
     if (method !== 'email') return;
     
+    if (isLoading) return;
+    
+    setIsLoading(true);
     Swal.fire({
       ...swalConfig.loading,
       title: 'Resending...',
@@ -313,7 +209,8 @@ function VerifyOTP() {
 
     try {
       await axios.post("http://localhost:5000/send-email-otp", { userId });
-      setTimeLeft(300); // Reset timer
+      setTimeLeft(300);
+      Swal.close();
       Swal.fire({
         ...swalConfig.success,
         title: 'Resent!',
@@ -322,11 +219,14 @@ function VerifyOTP() {
         showConfirmButton: false
       });
     } catch (err) {
+      Swal.close();
       Swal.fire({
         ...swalConfig.error,
         title: 'Error',
         text: err.response?.data?.message || 'Failed to resend OTP'
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -334,60 +234,26 @@ function VerifyOTP() {
     navigate("/otp-method", { state: { userId, username } });
   };
 
-  // Google Auth Setup UI
-  if (showGoogleSetup && method === 'google') {
-    return (
-      <div className="login-container">
-        <div className="card">
-          <h1 className="title">SETUP GOOGLE AUTHENTICATOR</h1>
-          <p className="subtitle">Scan the QR code with your Google Authenticator app</p>
+  // Auto-verify when 6 digits are entered for Google Auth
+  useEffect(() => {
+    if (method === 'google' && otp.length === 6 && !isLoading) {
+      // Clear any existing timeout
+      if (autoVerifyTimeoutRef.current) {
+        clearTimeout(autoVerifyTimeoutRef.current);
+      }
+      // Set a small delay to ensure user has finished typing
+      autoVerifyTimeoutRef.current = setTimeout(() => {
+        handleVerifyOTP({ preventDefault: () => {} });
+      }, 300);
+    }
+    
+    return () => {
+      if (autoVerifyTimeoutRef.current) {
+        clearTimeout(autoVerifyTimeoutRef.current);
+      }
+    };
+  }, [otp, method, isLoading]);
 
-          <div className="qr-code-container" style={{ textAlign: 'center', margin: '30px 0' }}>
-            {qrCode && (
-              <img 
-                src={qrCode} 
-                alt="QR Code for Google Authenticator" 
-                style={{ 
-                  maxWidth: '200px', 
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  padding: '10px'
-                }}
-              />
-            )}
-          </div>
-
-          <div style={{ marginTop: '20px' }}>
-            <label className="label">Enter the 6-digit code from the app:</label>
-            <input
-              type="text"
-              maxLength="6"
-              placeholder="000000"
-              value={setupToken}
-              onChange={(e) => setSetupToken(e.target.value.replace(/[^0-9]/g, ''))}
-              className="input"
-              style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '5px' }}
-            />
-          </div>
-
-          <button
-            className="login-btn"
-            onClick={handleVerifyAndEnableGoogleAuth}
-            disabled={isVerifyingSetup || setupToken.length !== 6}
-            style={{ marginTop: '20px' }}
-          >
-            {isVerifyingSetup ? 'Verifying...' : 'Verify & Enable'}
-          </button>
-
-          <button className="back-btn" onClick={() => setShowGoogleSetup(false)}>
-            Back
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Main OTP Verification UI
   return (
     <div className="login-container">
       <div className="card">
@@ -409,7 +275,7 @@ function VerifyOTP() {
             textAlign: 'center'
           }}>
             <p style={{ margin: 0, color: '#0369a1', fontSize: '14px' }}>
-              🔐 Open Google Authenticator app and enter the 6-digit code
+              Open Google Authenticator app and enter the 6-digit code
             </p>
           </div>
         )}
@@ -426,7 +292,10 @@ function VerifyOTP() {
               maxLength="6"
               placeholder="000000"
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+              onChange={(e) => {
+                const newVal = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
+                setOtp(newVal);
+              }}
               className="input"
               disabled={isLoading}
               style={{
@@ -435,7 +304,8 @@ function VerifyOTP() {
                 fontSize: '32px',
                 fontWeight: 'bold',
                 marginTop: '15px',
-                fontFamily: 'monospace'
+                fontFamily: 'monospace',
+                padding: '15px'
               }}
               autoFocus
               required
@@ -457,13 +327,16 @@ function VerifyOTP() {
                     <button
                       type="button"
                       onClick={handleResendOTP}
+                      disabled={isLoading}
                       className="resend-btn"
                       style={{
                         background: 'none',
                         border: 'none',
                         color: '#667eea',
-                        cursor: 'pointer',
-                        textDecoration: 'underline'
+                        cursor: isLoading ? 'not-allowed' : 'pointer',
+                        textDecoration: 'underline',
+                        fontSize: '14px',
+                        opacity: isLoading ? 0.5 : 1
                       }}
                     >
                       Resend Code
@@ -473,22 +346,24 @@ function VerifyOTP() {
               </>
             )}
 
-            {method === 'google' && !showGoogleSetup && (
-              <div style={{ textAlign: 'center', marginTop: '10px' }}>
+            {method === 'google' && (
+              <div style={{ textAlign: 'center', marginTop: '20px' }}>
                 <button
                   type="button"
                   onClick={handleSetupGoogleAuth}
+                  disabled={isLoading}
                   className="resend-btn"
                   style={{
                     background: 'none',
                     border: 'none',
                     color: '#667eea',
-                    cursor: 'pointer',
-                    textDecoration: 'underline'
+                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                    textDecoration: 'underline',
+                    fontSize: '14px',
+                    opacity: isLoading ? 0.5 : 1
                   }}
-                  disabled={isSettingUp}
                 >
-                  {isSettingUp ? 'Setting up...' : 'Setup Google Authenticator'}
+                  Setup Google Authenticator
                 </button>
               </div>
             )}
@@ -504,10 +379,17 @@ function VerifyOTP() {
           </button>
         </form>
 
-        <button className="back-btn" onClick={handleBack} style={{ marginTop: '15px' }}>
+        <button 
+          className="back-btn" 
+          onClick={handleBack} 
+          disabled={isLoading}
+          style={{ marginTop: '15px', opacity: isLoading ? 0.5 : 1 }}
+        >
           Change Method
         </button>
       </div>
     </div>
   );
-}
+}
+
+export default VerifyOTP;

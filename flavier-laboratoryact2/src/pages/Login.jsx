@@ -18,7 +18,7 @@ function Login() {
       color: '#1e293b',
       confirmButtonColor: '#10b981',
       confirmButtonText: 'Continue',
-      timer: 3000,
+      timer: 2000,
       timerProgressBar: true,
       showConfirmButton: true,
       customClass: {
@@ -95,16 +95,22 @@ function Login() {
     try {
       const res = await axios.post("http://localhost:5000/login", { username, password });
       
-      Swal.close(); // Close loading popup
+      Swal.close();
       
-      // Navigate to OTP method selection with user info
-      navigate("/otp-method", { 
-        state: { 
-          userId: res.data.userId, 
-          username,
-          requires2FA: res.data.requires2FA || false,
-          hasTotp: res.data.hasTotp || false
-        } 
+      Swal.fire({
+        ...swalConfig.success,
+        title: 'Login Successful!',
+        text: 'Welcome! Please choose your verification method.',
+        showConfirmButton: true,
+        confirmButtonText: 'Continue'
+      }).then(() => {
+        navigate("/otp-method", { 
+          state: { 
+            userId: res.data.userId, 
+            username: res.data.username,
+            hasTotp: res.data.hasTotp || false
+          } 
+        });
       });
     } catch (err) {
       Swal.fire({

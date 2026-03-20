@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Login from "./pages/Login.jsx";
-import OTPMethod from "./pages/OTPMethod.jsx";
+import Login from "./pages/Login";
+import OTPMethod from "./pages/OTPMethod";
 import Home from "./pages/Home";
-import GoogleAuthSetup from "./components/GoogleAuthSetup.jsx";
-import VerifyOTP from "./pages/VerifyOTP.jsx";
+import GoogleAuthSetup from "./pages/GoogleAuthSetup";
+import VerifyOTP from "./pages/VerifyOTP";
+
 function App() {
   return (
     <BrowserRouter>

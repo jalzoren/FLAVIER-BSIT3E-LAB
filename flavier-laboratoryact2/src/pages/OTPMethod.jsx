@@ -9,6 +9,7 @@ function OTPMethod() {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedMethod, setSelectedMethod] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { userId, username } = location.state || {};
 
   const swalConfig = {
@@ -56,6 +57,19 @@ function OTPMethod() {
       didOpen: () => {
         Swal.showLoading();
       }
+    },
+    info: {
+      icon: 'info',
+      background: '#ffffff',
+      color: '#1e293b',
+      confirmButtonColor: '#667eea',
+      confirmButtonText: 'OK',
+      customClass: {
+        popup: 'swal-custom-popup',
+        title: 'swal-custom-title',
+        htmlContainer: 'swal-custom-text',
+        confirmButton: 'swal-custom-button-info'
+      }
     }
   };
 
@@ -66,6 +80,8 @@ function OTPMethod() {
 
   const handleEmailOTP = async () => {
     setSelectedMethod('email');
+    setIsLoading(true);
+    
     Swal.fire({
       ...swalConfig.loading,
       title: 'Sending OTP...',
@@ -90,36 +106,59 @@ function OTPMethod() {
         text: err.response?.data?.message || 'Failed to send OTP. Please try again!'
       });
       setSelectedMethod(null);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleGoogleAuth = async () => {
     setSelectedMethod('google');
+    setIsLoading(true);
+    
     Swal.fire({
       ...swalConfig.loading,
-      title: 'Initializing Google Auth...',
-      text: 'Please wait while we process Google authentication'
+      title: 'Checking Google Auth...',
+      text: 'Please wait while we verify Google Authenticator setup'
     });
 
     try {
-      // Call backend to initiate Google auth
-      await axios.post("http://localhost:5000/initiate-google-otp", { userId });
-      Swal.fire({
-        ...swalConfig.success,
-        title: 'Success',
-        text: 'Proceeding with Google authentication!',
-        timer: 2000,
-        showConfirmButton: false
-      }).then(() => {
-        navigate("/verify-otp", { state: { userId, username, method: 'google' } });
-      });
+      const response = await axios.get(`http://localhost:5000/google-auth-status/${userId}`);
+      
+      if (response.data.enabled) {
+        Swal.fire({
+          ...swalConfig.success,
+          title: 'Ready',
+          text: 'Please enter the code from your Google Authenticator app',
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => {
+          navigate("/verify-otp", { state: { userId, username, method: 'google' } });
+        });
+      } else {
+        Swal.fire({
+          ...swalConfig.info,
+          title: 'Setup Required',
+          text: 'Google Authenticator is not set up. Would you like to set it up now?',
+          showCancelButton: true,
+          confirmButtonText: 'Set Up Now',
+          cancelButtonText: 'Cancel'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            navigate("/setup-google-auth", { state: { userId, username } });
+          } else {
+            setSelectedMethod(null);
+          }
+        });
+      }
     } catch (err) {
       Swal.fire({
         ...swalConfig.error,
         title: 'Error',
-        text: err.response?.data?.message || 'Failed to initialize Google auth. Please try again!'
+        text: err.response?.data?.message || 'Failed to check Google Auth status'
       });
       setSelectedMethod(null);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -137,7 +176,7 @@ function OTPMethod() {
           <button
             className={`otp-method-card ${selectedMethod === 'email' ? 'active' : ''}`}
             onClick={handleEmailOTP}
-            disabled={selectedMethod !== null}
+            disabled={isLoading}
           >
             <div className="method-icon">
               <FaEnvelope />
@@ -149,7 +188,7 @@ function OTPMethod() {
           <button
             className={`otp-method-card ${selectedMethod === 'google' ? 'active' : ''}`}
             onClick={handleGoogleAuth}
-            disabled={selectedMethod !== null}
+            disabled={isLoading}
           >
             <div className="method-icon">
               <FaGoogle />
