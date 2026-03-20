@@ -103,7 +103,7 @@ function OTPMethod() {
 
     try {
       // Call backend to initiate Google auth
-      const res = await axios.post("http://localhost:5000/initiate-google-otp", { userId });
+      await axios.post("http://localhost:5000/initiate-google-otp", { userId });
       Swal.fire({
         ...swalConfig.success,
         title: 'Success',

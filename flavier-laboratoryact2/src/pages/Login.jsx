@@ -94,14 +94,17 @@ function Login() {
 
     try {
       const res = await axios.post("http://localhost:5000/login", { username, password });
-      Swal.fire({
-        ...swalConfig.success,
-        title: 'Success',
-        text:  'Login successful! Choose your verification method.',
-        timer: 2000,
-        showConfirmButton: false
-      }).then(() => {
-        navigate("/otp-method", { state: { userId: res.data.userId, username } });
+      
+      Swal.close(); // Close loading popup
+      
+      // Navigate to OTP method selection with user info
+      navigate("/otp-method", { 
+        state: { 
+          userId: res.data.userId, 
+          username,
+          requires2FA: res.data.requires2FA || false,
+          hasTotp: res.data.hasTotp || false
+        } 
       });
     } catch (err) {
       Swal.fire({
@@ -110,7 +113,7 @@ function Login() {
         text: err.response?.data?.message || 'Invalid credentials. Please try again!'
       });
     }
-  };;
+  };
 
   return (
     <div className="login-container">
@@ -125,6 +128,7 @@ function Login() {
               value={username}
               onChange={e => setUsername(e.target.value)}
               placeholder="Enter your username"
+              onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
             />
 
             <label>PASSWORD</label>
@@ -134,6 +138,7 @@ function Login() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="Enter your password"
+                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
               />
               <button 
                 type="button" 
