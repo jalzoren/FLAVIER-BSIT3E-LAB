@@ -150,6 +150,8 @@ function Home() {
         LOG OUT
       </button>
 
+   
+
       <div
         className={`flip-card ${isFlipped ? "flipped" : ""}`}
         onClick={handleCardClick}

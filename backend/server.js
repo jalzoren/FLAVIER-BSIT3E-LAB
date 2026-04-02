@@ -224,7 +224,7 @@ app.post("/send-email-otp", async (req, res) => {
   }
 });
 
-// ========== GOOGLE AUTH SETUP (STEP 1) ==========
+// GOOGLE AUTH SETUP 
 app.post("/setup-google-auth", async (req, res) => {
   try {
     const { userId } = req.body;
@@ -235,7 +235,6 @@ app.post("/setup-google-auth", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Generate a new secret for Google Authenticator
     const secret = speakeasy.generateSecret({
       name: `NewJeans (${user.username})`,
       issuer: "NewJeans ID",
@@ -244,7 +243,6 @@ app.post("/setup-google-auth", async (req, res) => {
 
     console.log(`Generated secret for ${user.username}:`, secret.base32);
 
-    // Store temporary secret for verification
     tempSecrets[userId] = {
       secret: secret.base32,
       expiresAt: Date.now() + 10 * 60 * 1000,
@@ -252,10 +250,8 @@ app.post("/setup-google-auth", async (req, res) => {
       createdAt: new Date().toISOString()
     };
 
-    // Generate QR code
     const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
 
-    console.log(`[STEP 1] Google Auth setup initiated for user: ${user.username}`);
     
     res.json({
       success: true,
@@ -272,17 +268,15 @@ app.post("/setup-google-auth", async (req, res) => {
   }
 });
 
-// ========== VERIFY AND ENABLE GOOGLE AUTH (STEP 2) ==========
+// verify gauth
 app.post("/verify-google-auth", (req, res) => {
   try {
     const { userId, token } = req.body;
     const tokenStr = String(token).trim();
-    console.log(`[STEP 2] Verifying 6-digit code for userId: ${userId}, code: ${tokenStr}, type: ${typeof tokenStr}, length: ${tokenStr.length}`);
 
     const tempSecret = tempSecrets[userId];
 
     if (!tempSecret) {
-      console.log(`[ERROR] No pending setup for userId: ${userId}. Available: ${Object.keys(tempSecrets).join(', ')}`);
       return res.status(400).json({ 
         success: false,
         message: "No pending Google Auth setup found. Please start over.",
@@ -292,7 +286,6 @@ app.post("/verify-google-auth", (req, res) => {
 
     if (Date.now() > tempSecret.expiresAt) {
       delete tempSecrets[userId];
-      console.log(`[ERROR] Setup session expired for userId: ${userId}`);
       return res.status(400).json({ 
         success: false,
         message: "Setup session expired (10 minutes). Please start over.",
@@ -302,19 +295,17 @@ app.post("/verify-google-auth", (req, res) => {
 
     console.log(`[DEBUG] Verifying with secret: ${tempSecret.secret}, username: ${tempSecret.username}`);
 
-    // Verify the 6-digit TOTP token
-    // Try verification with increasing window to be more forgiving of time sync issues
+ 
     let verified = speakeasy.totp.verify({
       secret: tempSecret.secret,
       encoding: 'base32',
       token: tokenStr,
-      window: 4,  // Increased from 2 to 4 to allow for time sync variations
+      window: 0,  
       step: 30
     });
 
     console.log(`[DEBUG] First verification attempt (window: 4): ${verified}`);
 
-    // If failed, try generating what the code SHOULD be to help debug
     if (!verified) {
       const currentToken = speakeasy.totp({
         secret: tempSecret.secret,
@@ -323,18 +314,16 @@ app.post("/verify-google-auth", (req, res) => {
       });
       console.log(`[DEBUG] Expected token at current time: ${currentToken}, got: ${tokenStr}`);
       
-      // Try with even larger window
       verified = speakeasy.totp.verify({
         secret: tempSecret.secret,
         encoding: 'base32',
         token: tokenStr,
-        window: 6,  // Try even larger window
+        window: 6, 
         step: 30
       });
       console.log(`[DEBUG] Second verification attempt (window: 6): ${verified}`);
     }
 
-    console.log(`[DEBUG] Final verification result: ${verified}`);
 
     if (verified) {
       const user = users.find(u => u.id === userId);
@@ -366,7 +355,6 @@ app.post("/verify-google-auth", (req, res) => {
   }
 });
 
-// ========== VERIFY OTP DURING LOGIN ==========
 app.post("/verify-otp", (req, res) => {
   try {
     const { userId, otp, method } = req.body;
@@ -388,17 +376,13 @@ app.post("/verify-otp", (req, res) => {
       }
 
       const otpStr = String(otp).trim();
-      console.log(`[DEBUG] Verifying Google Auth OTP for user: ${user.username}, code: ${otpStr}, length: ${otpStr.length}`);
       
-      // Generate expected token for debugging
       const expectedToken = speakeasy.totp({
         secret: user.totpSecret,
         encoding: 'base32',
         step: 30
       });
-      console.log(`[DEBUG] Expected token at current time: ${expectedToken}, Received: ${otpStr}`);
 
-      // Try verification with window 4
       let verified = speakeasy.totp.verify({
         secret: user.totpSecret,
         encoding: 'base32',
@@ -406,9 +390,7 @@ app.post("/verify-otp", (req, res) => {
         window: 4,
         step: 30
       });
-      console.log(`[DEBUG] Verification attempt (window: 4): ${verified}`);
 
-      // Try with larger window if failed
       if (!verified) {
         verified = speakeasy.totp.verify({
           secret: user.totpSecret,
@@ -417,7 +399,6 @@ app.post("/verify-otp", (req, res) => {
           window: 6,
           step: 30
         });
-        console.log(`[DEBUG] Verification attempt (window: 6): ${verified}`);
       }
 
       if (verified) {
@@ -545,7 +526,6 @@ app.get("/check-auth-method/:userId", (req, res) => {
   }
 });
 
-// Debug endpoint to check temp secrets
 app.get("/debug/temp-secrets", (req, res) => {
   res.json({
     tempSecrets: Object.keys(tempSecrets).map(key => ({
@@ -578,6 +558,4 @@ setInterval(() => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
-  console.log(`Server is ready with Google Authenticator support!`);
-  console.log(`Make sure your phone time is synced correctly for TOTP to work`);
 });
