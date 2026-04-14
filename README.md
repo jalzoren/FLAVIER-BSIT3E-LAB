@@ -2,48 +2,36 @@
 ```
 FLAVIER-BSIT3E-LAB2ACTOTP
 ├─ backend
+│  ├─ .env
+│  ├─ config
+│  │  └─ supabase.js
+│  ├─ controllers
+│  │  ├─ authController.js
+│  │  ├─ googleAuthController.js
+│  │  ├─ otpController.js
+│  │  └─ userController.js
+│  ├─ middleware
+│  │  └─ errorHandler.js
+│  ├─ models
 │  ├─ package-lock.json
 │  ├─ package.json
-│  └─ server.js
-└─ flavier-laboratoryact2
-   ├─ eslint.config.js
-   ├─ index.html
-   ├─ package-lock.json
-   ├─ package.json
-   ├─ public
-   │  └─ vite.svg
-   ├─ README.md
-   ├─ src
-   │  ├─ App.css
-   │  ├─ App.jsx
-   │  ├─ assets
-   │  │  └─ react.svg
-   │  ├─ components
-   │  │  └─ GoogleAuthSetup.jsx
-   │  ├─ css
-   │  │  └─ Auth.css
-   │  ├─ index.css
-   │  ├─ main.jsx
-   │  └─ pages
-   │     ├─ Home.jsx
-   │     ├─ Login.jsx
-   │     ├─ OTPMethod.jsx
-   │     └─ VerifyOTP.jsx
-   └─ vite.config.js
-
-```
-```
-FLAVIER-BSIT3E-LAB2ACTOTP
-├─ backend
-│  ├─ package-lock.json
-│  ├─ package.json
-│  └─ server.js
+│  ├─ routes
+│  │  ├─ authRoutes.js
+│  │  ├─ googleAuthRoutes.js
+│  │  ├─ otpRoutes.js
+│  │  └─ userRoutes.js
+│  ├─ server.js
+│  ├─ services
+│  │  ├─ emailService.js
+│  │  └─ otpService.js
+│  └─ utils
 ├─ flavier-laboratoryact2
 │  ├─ eslint.config.js
 │  ├─ index.html
 │  ├─ package-lock.json
 │  ├─ package.json
 │  ├─ public
+│  │  ├─ HANNI.jpg
 │  │  ├─ vite.svg
 │  │  └─ WONN.jpg
 │  ├─ README.md

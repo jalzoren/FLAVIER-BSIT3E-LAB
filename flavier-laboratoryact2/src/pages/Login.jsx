@@ -4,6 +4,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import "../css/Auth.css";
+import { Link } from "react-router-dom";
 
 function Login() {
   const [username, setUsername] = useState("");
@@ -19,15 +20,6 @@ function Login() {
       confirmButtonColor: '#10b981',
       confirmButtonText: 'Continue',
       timer: 2000,
-      timerProgressBar: true,
-      showConfirmButton: true,
-      customClass: {
-        popup: 'swal-custom-popup',
-        title: 'swal-custom-title',
-        htmlContainer: 'swal-custom-text',
-        confirmButton: 'swal-custom-button',
-        timerProgressBar: 'swal-custom-progress'
-      }
     },
     error: {
       icon: 'error',
@@ -35,39 +27,20 @@ function Login() {
       color: '#1e293b',
       confirmButtonColor: '#ef4444',
       confirmButtonText: 'Try Again',
-      customClass: {
-        popup: 'swal-custom-popup',
-        title: 'swal-custom-title',
-        htmlContainer: 'swal-custom-text',
-        confirmButton: 'swal-custom-button-error'
-      }
+    },
+    warning: {
+      icon: 'warning',
+      background: '#ffffff',
+      color: '#1e293b',
+      confirmButtonColor: '#f59e0b',
+      confirmButtonText: 'OK',
     },
     loading: {
       title: 'Processing...',
       allowOutsideClick: false,
       showConfirmButton: false,
-      background: '#ffffff',
-      color: '#1e293b',
-      customClass: {
-        popup: 'swal-custom-popup',
-        title: 'swal-custom-title',
-        htmlContainer: 'swal-custom-text'
-      },
       didOpen: () => {
         Swal.showLoading();
-      }
-    },
-    info: {
-      icon: 'info',
-      background: '#ffffff',
-      color: '#1e293b',
-      confirmButtonColor: '#667eea',
-      confirmButtonText: 'OK',
-      customClass: {
-        popup: 'swal-custom-popup',
-        title: 'swal-custom-title',
-        htmlContainer: 'swal-custom-text',
-        confirmButton: 'swal-custom-button-info'
       }
     }
   };
@@ -93,31 +66,77 @@ function Login() {
     });
 
     try {
-      const res = await axios.post("http://localhost:5000/login", { username, password });
+      const res = await axios.post("http://localhost:5000/api/auth/login", { 
+        username, 
+        password 
+      });
       
       Swal.close();
       
-      Swal.fire({
-        ...swalConfig.success,
-        title: 'Login Successful!',
-        text: 'Welcome! Please choose your verification method.',
-        showConfirmButton: true,
-        confirmButtonText: 'Continue'
-      }).then(() => {
-        navigate("/otp-method", { 
-          state: { 
-            userId: res.data.userId, 
-            username: res.data.username,
-            hasTotp: res.data.hasTotp || false
-          } 
+      // Check if logged in user is admin (jalgorithm)
+      if (res.data.username === 'jalgorithm') {
+        Swal.fire({
+          ...swalConfig.success,
+          title: 'Admin Login Successful!',
+          text: 'Welcome Admin! Redirecting to Admin Dashboard...',
+          showConfirmButton: true,
+          confirmButtonText: 'Go to Dashboard'
+        }).then(() => {
+          navigate("/admin", { 
+            state: { 
+              userId: res.data.userId, 
+              username: res.data.username,
+              isAdmin: true
+            } 
+          });
         });
-      });
+      } else {
+        Swal.fire({
+          ...swalConfig.success,
+          title: 'Login Successful!',
+          text: 'Welcome! Please choose your verification method.',
+          showConfirmButton: true,
+          confirmButtonText: 'Continue'
+        }).then(() => {
+          navigate("/otp-method", { 
+            state: { 
+              userId: res.data.userId, 
+              username: res.data.username,
+              hasTotp: res.data.hasTotp || false
+            } 
+          });
+        });
+      }
     } catch (err) {
-      Swal.fire({
-        ...swalConfig.error,
-        title: 'Login Failed',
-        text: err.response?.data?.message || 'Invalid credentials. Please try again!'
-      });
+      Swal.close();
+      
+      console.error("Login error details:", err.response?.data);
+      
+      const errorMessage = err.response?.data?.message || 'Invalid credentials. Please try again!';
+      const accountLocked = err.response?.data?.accountLocked;
+      const attemptsRemaining = err.response?.data?.attemptsRemaining;
+      
+      if (accountLocked) {
+        Swal.fire({
+          ...swalConfig.error,
+          title: 'Account Locked',
+          text: errorMessage,
+          confirmButtonText: 'Contact Administrator'
+        });
+      } else if (attemptsRemaining !== undefined) {
+        Swal.fire({
+          ...swalConfig.warning,
+          title: 'Login Failed',
+          text: errorMessage,
+          confirmButtonText: 'Try Again'
+        });
+      } else {
+        Swal.fire({
+          ...swalConfig.error,
+          title: 'Login Failed',
+          text: errorMessage
+        });
+      }
     }
   };
 
@@ -157,6 +176,10 @@ function Login() {
             </div>
 
             <button className="login-btn" onClick={handleLogin}>LOGIN</button>
+
+            <div className="register-link">
+              <p>Don't have an account? <Link to="/register">Register here</Link></p>
+            </div>
           </div>
         </div>
       </div>

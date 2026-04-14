@@ -10,7 +10,7 @@ function OTPMethod() {
   const location = useLocation();
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { userId, username } = location.state || {};
+  const { userId, username, hasTotp } = location.state || {};
 
   const swalConfig = {
     success: {
@@ -89,7 +89,9 @@ function OTPMethod() {
     });
 
     try {
-      await axios.post("http://localhost:5000/send-email-otp", { userId });
+      await axios.post("http://localhost:5000/api/otp/send-email", { userId });
+      Swal.close();
+      
       Swal.fire({
         ...swalConfig.success,
         title: 'Success',
@@ -100,6 +102,7 @@ function OTPMethod() {
         navigate("/verify-otp", { state: { userId, username, method: 'email' } });
       });
     } catch (err) {
+      Swal.close();
       Swal.fire({
         ...swalConfig.error,
         title: 'Error',
@@ -122,9 +125,10 @@ function OTPMethod() {
     });
 
     try {
-      const response = await axios.get(`http://localhost:5000/google-auth-status/${userId}`);
+      const response = await axios.get(`http://localhost:5000/api/google-auth/status/${userId}`);
       
       if (response.data.enabled) {
+        Swal.close();
         Swal.fire({
           ...swalConfig.success,
           title: 'Ready',
@@ -135,6 +139,7 @@ function OTPMethod() {
           navigate("/verify-otp", { state: { userId, username, method: 'google' } });
         });
       } else {
+        Swal.close();
         Swal.fire({
           ...swalConfig.info,
           title: 'Setup Required',
@@ -151,6 +156,7 @@ function OTPMethod() {
         });
       }
     } catch (err) {
+      Swal.close();
       Swal.fire({
         ...swalConfig.error,
         title: 'Error',
@@ -171,6 +177,7 @@ function OTPMethod() {
       <div className="card">
         <h1 className="title">VERIFY ACCOUNT</h1>
         <p className="subtitle">Choose your verification method</p>
+        <p className="welcome-text">Welcome, {username}!</p>
 
         <div className="otp-method-grid">
           <button
@@ -197,6 +204,11 @@ function OTPMethod() {
             <p className="method-description">Use Google Authenticator app</p>
           </button>
         </div>
+
+        {!hasTotp && (
+          <div className="setup-hint">
+          </div>
+        )}
 
         <button className="back-btn" onClick={handleBack}>
           BACK TO LOGIN
