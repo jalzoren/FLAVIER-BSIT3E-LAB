@@ -13,50 +13,12 @@ function VerifyOTP() {
   const { userId, username, method } = location.state || {};
   const autoVerifyTimeoutRef = useRef(null);
 
-  const swalConfig = {
-    success: {
-      icon: 'success',
-      background: '#ffffff',
-      color: '#1e293b',
-      confirmButtonColor: '#10b981',
-      confirmButtonText: 'Continue',
-      timer: 3000,
-      timerProgressBar: true,
-      showConfirmButton: true,
-    },
-    error: {
-      icon: 'error',
-      background: '#ffffff',
-      color: '#1e293b',
-      confirmButtonColor: '#ef4444',
-      confirmButtonText: 'Try Again',
-    },
-    warning: {
-      icon: 'warning',
-      background: '#ffffff',
-      color: '#1e293b',
-      confirmButtonColor: '#f59e0b',
-      confirmButtonText: 'OK',
-    },
-    loading: {
-      title: 'Processing...',
-      allowOutsideClick: false,
-      showConfirmButton: false,
-      background: '#ffffff',
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    }
-  };
-
   useEffect(() => {
     if (!userId || !username || !method) {
       navigate("/");
       return;
     }
-    console.log("VerifyOTP mounted with:", { userId, username, method });
     
-    // Clear any existing timeout on unmount
     return () => {
       if (autoVerifyTimeoutRef.current) {
         clearTimeout(autoVerifyTimeoutRef.current);
@@ -86,46 +48,51 @@ function VerifyOTP() {
       e.preventDefault();
     }
 
-    // Validate OTP
     if (!otp || otp.length !== 6) {
       Swal.fire({
-        ...swalConfig.error,
+        icon: 'warning',
         title: 'Invalid Code',
         text: 'Please enter a valid 6-digit code!'
       });
       return;
     }
 
-    // Prevent multiple submissions
     if (isLoading) return;
 
     setIsLoading(true);
-    
-    // Show loading indicator
     Swal.fire({
-      ...swalConfig.loading,
       title: 'Verifying...',
-      text: 'Please wait while we verify your code'
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
     });
 
     try {
-      console.log(`Sending verification for userId: ${userId}, method: ${method}, otp: ${otp}`);
+      let response;
       
-      const res = await axios.post("http://localhost:5000/verify-otp", {
-        userId,
-        otp: otp.toString().trim(),
-        method
-      });
+      if (method === 'google') {
+        response = await axios.post("http://localhost:5000/api/google-auth/direct-verify", {
+          userId: Number(userId),
+          token: otp.toString().trim()
+        });
+      } else {
+        response = await axios.post("http://localhost:5000/api/otp/verify", {
+          userId,
+          otp: otp.toString().trim(),
+          method
+        });
+      }
 
-      console.log("Verification response:", res.data);
+      Swal.close();
 
-      if (res.data.verified) {
-        Swal.close();
+      if (response.data.success || response.data.verified) {
         Swal.fire({
-          ...swalConfig.success,
+          icon: 'success',
           title: 'Success!',
-          text: 'Verification successful! Welcome to NewJeans!',
-          timer: 2000,
+          text: 'Verification successful!',
+          timer: 1500,
           showConfirmButton: false
         }).then(() => {
           navigate("/home", { state: { username, userId } });
@@ -135,93 +102,46 @@ function VerifyOTP() {
       }
     } catch (err) {
       Swal.close();
-      console.error("Verification error:", err.response?.data || err.message);
-      
-      const errorMsg = err.response?.data?.message || 'Invalid or expired code. Please try again!';
-      const needsSetup = err.response?.data?.needsSetup;
-      const code = err.response?.data?.code;
-      
-      if (needsSetup) {
-        Swal.fire({
-          ...swalConfig.warning,
-          title: 'Setup Required',
-          text: 'Google Authenticator not set up. Would you like to set it up now?',
-          confirmButtonText: 'Setup Now',
-          showCancelButton: true,
-          cancelButtonText: 'Try Email',
-          cancelButtonColor: '#6b7280'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            navigate("/setup-google-auth", { state: { userId, username } });
-          } else {
-            navigate("/otp-method", { state: { userId, username } });
-          }
-        });
-      } else if (code === 'INVALID') {
-        Swal.fire({
-          ...swalConfig.error,
-          title: 'Invalid Code',
-          text: errorMsg,
-          confirmButtonText: 'Try Again'
-        });
-        setOtp("");
-      } else if (code === 'EXPIRED') {
-        Swal.fire({
-          ...swalConfig.error,
-          title: 'Code Expired',
-          text: errorMsg,
-          confirmButtonText: 'Request New Code'
-        }).then(() => {
-          if (method === 'email') {
-            handleResendOTP();
-          } else {
-            navigate("/otp-method", { state: { userId, username } });
-          }
-        });
-      } else {
-        Swal.fire({
-          ...swalConfig.error,
-          title: 'Verification Failed',
-          text: errorMsg
-        });
-        setOtp("");
-      }
+      Swal.fire({
+        icon: 'error',
+        title: 'Verification Failed',
+        text: err.response?.data?.message || 'Invalid or expired code. Please try again!'
+      });
+      setOtp("");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSetupGoogleAuth = () => {
-    navigate("/setup-google-auth", { state: { userId, username } });
-  };
-
   const handleResendOTP = async () => {
     if (method !== 'email') return;
-    
     if (isLoading) return;
     
     setIsLoading(true);
     Swal.fire({
-      ...swalConfig.loading,
       title: 'Resending...',
-      text: 'Please wait while we resend the OTP'
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
     });
 
     try {
-      await axios.post("http://localhost:5000/send-email-otp", { userId });
+      await axios.post("http://localhost:5000/api/otp/send-email-otp", { userId });
       setTimeLeft(300);
       Swal.close();
       Swal.fire({
-        ...swalConfig.success,
+        icon: 'success',
         title: 'Resent!',
         text: 'A new OTP has been sent to your email',
-        timer: 2000,
+        timer: 1500,
         showConfirmButton: false
       });
     } catch (err) {
       Swal.close();
       Swal.fire({
-        ...swalConfig.error,
+        icon: 'error',
         title: 'Error',
         text: err.response?.data?.message || 'Failed to resend OTP'
       });
@@ -234,14 +154,11 @@ function VerifyOTP() {
     navigate("/otp-method", { state: { userId, username } });
   };
 
-  // Auto-verify when 6 digits are entered for Google Auth
   useEffect(() => {
     if (method === 'google' && otp.length === 6 && !isLoading) {
-      // Clear any existing timeout
       if (autoVerifyTimeoutRef.current) {
         clearTimeout(autoVerifyTimeoutRef.current);
       }
-      // Set a small delay to ensure user has finished typing
       autoVerifyTimeoutRef.current = setTimeout(() => {
         handleVerifyOTP({ preventDefault: () => {} });
       }, 300);
@@ -266,25 +183,8 @@ function VerifyOTP() {
             : 'Enter the 6-digit code from Google Authenticator'}
         </p>
 
-        {method === 'google' && (
-          <div style={{ 
-            backgroundColor: '#f0f9ff', 
-            padding: '15px', 
-            borderRadius: '8px',
-            marginBottom: '20px',
-            textAlign: 'center'
-          }}>
-            <p style={{ margin: 0, color: '#0369a1', fontSize: '14px' }}>
-              Open Google Authenticator app and enter the 6-digit code
-            </p>
-          </div>
-        )}
-
         <form onSubmit={handleVerifyOTP}>
           <div className="form-group" style={{ marginTop: '30px' }}>
-            <label className="label" style={{ textAlign: 'center', display: 'block' }}>
-              Verification Code
-            </label>
             <input
               type="text"
               inputMode="numeric"
@@ -303,7 +203,6 @@ function VerifyOTP() {
                 letterSpacing: '10px',
                 fontSize: '32px',
                 fontWeight: 'bold',
-                marginTop: '15px',
                 fontFamily: 'monospace',
                 padding: '15px'
               }}
@@ -311,59 +210,33 @@ function VerifyOTP() {
               required
             />
 
-            {method === 'email' && (
-              <>
-                <div style={{
-                  textAlign: 'center',
-                  marginTop: '20px',
-                  fontSize: '14px',
-                  color: timeLeft <= 60 ? '#ef4444' : '#666666'
-                }}>
-                  Code expires in: <strong>{formatTime(timeLeft)}</strong>
-                </div>
-
-                {timeLeft <= 0 && (
-                  <div style={{ textAlign: 'center', marginTop: '10px' }}>
-                    <button
-                      type="button"
-                      onClick={handleResendOTP}
-                      disabled={isLoading}
-                      className="resend-btn"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#667eea',
-                        cursor: isLoading ? 'not-allowed' : 'pointer',
-                        textDecoration: 'underline',
-                        fontSize: '14px',
-                        opacity: isLoading ? 0.5 : 1
-                      }}
-                    >
-                      Resend Code
-                    </button>
-                  </div>
-                )}
-              </>
+            {method === 'email' && timeLeft > 0 && (
+              <div style={{
+                textAlign: 'center',
+                marginTop: '15px',
+                fontSize: '14px',
+                color: '#666666'
+              }}>
+                Code expires in: {formatTime(timeLeft)}
+              </div>
             )}
 
-            {method === 'google' && (
-              <div style={{ textAlign: 'center', marginTop: '20px' }}>
+            {method === 'email' && timeLeft <= 0 && (
+              <div style={{ textAlign: 'center', marginTop: '15px' }}>
                 <button
                   type="button"
-                  onClick={handleSetupGoogleAuth}
+                  onClick={handleResendOTP}
                   disabled={isLoading}
-                  className="resend-btn"
                   style={{
                     background: 'none',
                     border: 'none',
                     color: '#667eea',
-                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                    cursor: 'pointer',
                     textDecoration: 'underline',
-                    fontSize: '14px',
-                    opacity: isLoading ? 0.5 : 1
+                    fontSize: '14px'
                   }}
                 >
-                  Setup Google Authenticator
+                  Resend Code
                 </button>
               </div>
             )}
@@ -381,9 +254,8 @@ function VerifyOTP() {
 
         <button 
           className="back-btn" 
-          onClick={handleBack} 
-          disabled={isLoading}
-          style={{ marginTop: '15px', opacity: isLoading ? 0.5 : 1 }}
+          onClick={handleBack}
+          style={{ marginTop: '15px' }}
         >
           Change Method
         </button>

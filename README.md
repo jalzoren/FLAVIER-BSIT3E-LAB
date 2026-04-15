@@ -1,5 +1,4 @@
 
-```
 FLAVIER-BSIT3E-LAB2ACTOTP
 ├─ backend
 │  ├─ .env
@@ -42,15 +41,19 @@ FLAVIER-BSIT3E-LAB2ACTOTP
 │  │  │  └─ react.svg
 │  │  ├─ components
 │  │  ├─ css
+│  │  │  ├─ AdminDashboard.css
 │  │  │  ├─ Auth.css
 │  │  │  └─ Home.css
 │  │  ├─ index.css
 │  │  ├─ main.jsx
 │  │  └─ pages
+│  │     ├─ AdminDashboard.jsx
+│  │     ├─ GoogleAuthDirect.jsx
 │  │     ├─ GoogleAuthSetup.jsx
 │  │     ├─ Home.jsx
 │  │     ├─ Login.jsx
 │  │     ├─ OTPMethod.jsx
+│  │     ├─ Register.jsx
 │  │     └─ VerifyOTP.jsx
 │  └─ vite.config.js
 └─ README.md

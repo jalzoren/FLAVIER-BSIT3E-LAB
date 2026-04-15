@@ -8,84 +8,39 @@ function GoogleAuthSetup() {
   const navigate = useNavigate();
   const location = useLocation();
   const { userId, username } = location.state || {};
+
   const [secret, setSecret] = useState('');
   const [qrCode, setQrCode] = useState('');
   const [token, setToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [setupComplete, setSetupComplete] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(600);
 
   useEffect(() => {
     if (!userId || !username) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Missing user information. Please login again.'
-      }).then(() => {
-        navigate('/');
-      });
+      navigate('/');
       return;
     }
     setupGoogleAuth();
-  }, [userId, username]);
-
-  useEffect(() => {
-    if (setupComplete && timeLeft > 0) {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            Swal.fire({
-              icon: 'warning',
-              title: 'QR Code Expired',
-              text: 'Setup session expired. Please go back and try again.',
-              confirmButtonColor: '#ef4444'
-            }).then(() => {
-              navigate('/otp-method', { state: { userId, username } });
-            });
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [setupComplete, timeLeft, userId, username, navigate]);
+  }, []);
 
   const setupGoogleAuth = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/google-auth/setup', { 
-        userId: parseInt(userId)
+      const response = await axios.post('http://localhost:5000/api/google-auth/setup', {
+        userId: Number(userId),
       });
-      
-      console.log('Setup response:', response.data);
-      
-      if (response.data.qrCode) {
+
+      if (response.data.success) {
         setSecret(response.data.secret);
         setQrCode(response.data.qrCode);
-        setSetupComplete(true);
-        
-        Swal.fire({
-          icon: 'success',
-          title: 'QR Code Generated',
-          text: 'Scan the QR code with Google Authenticator app',
-          timer: 2000,
-          showConfirmButton: false
-        });
-      } else {
-        throw new Error('Invalid response');
       }
     } catch (error) {
-      console.error('Setup error:', error);
-      Swal.fire({
+      await Swal.fire({
         icon: 'error',
         title: 'Setup Failed',
-        text: error.response?.data?.message || 'Failed to setup Google Authenticator'
-      }).then(() => {
-        navigate('/otp-method', { state: { userId, username } });
+        text: error.response?.data?.message || 'Failed to setup. Please try again.',
       });
+      navigate('/otp-method', { state: { userId, username } });
     } finally {
       setIsLoading(false);
     }
@@ -96,68 +51,46 @@ function GoogleAuthSetup() {
       Swal.fire({
         icon: 'warning',
         title: 'Invalid Code',
-        text: 'Please enter a valid 6-digit code'
+        text: 'Please enter the 6-digit code shown in Google Authenticator.',
       });
       return;
     }
 
     setIsVerifying(true);
-    
     try {
       const response = await axios.post('http://localhost:5000/api/google-auth/verify', {
-        userId: parseInt(userId),
-        token: token.toString().trim()
+        userId: Number(userId),
+        token: token.trim(),
       });
 
-      console.log('Verify response:', response.data);
-
-      if (response.data.success === true || response.data.verified === true) {
-        Swal.fire({
+      if (response.data.success) {
+        await Swal.fire({
           icon: 'success',
           title: 'Success!',
-          text: 'Google Authenticator enabled successfully!',
+          text: 'Google Authenticator has been enabled!',
           timer: 1500,
-          showConfirmButton: false
-        }).then(() => {
-          navigate('/otp-method', { state: { userId, username, hasTotp: true } });
+          showConfirmButton: false,
         });
-      } else {
-        throw new Error(response.data.message || 'Verification failed');
+        // Go directly to home - no second verification needed
+        navigate('/home', { state: { userId, username } });
       }
     } catch (error) {
-      console.error('Verification error:', error);
+      console.error('Verification error:', error.response?.data);
       
-      let errorMessage = 'Failed to verify code';
-      
-      if (error.response?.data?.code === 'NO_SETUP') {
-        errorMessage = 'Setup session expired. Please go back and try again.';
-        Swal.fire({
-          icon: 'error',
-          title: 'Session Expired',
-          text: errorMessage
-        }).then(() => {
-          navigate('/otp-method', { state: { userId, username } });
-        });
-        return;
-      } else if (error.response?.data?.message) {
+      let errorMessage = 'Invalid code. Try again.';
+      if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       }
       
       Swal.fire({
         icon: 'error',
         title: 'Verification Failed',
-        text: errorMessage
+        text: errorMessage,
       });
       setToken('');
     } finally {
       setIsVerifying(false);
     }
-  };
-
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (isLoading) {
@@ -176,98 +109,79 @@ function GoogleAuthSetup() {
       <div className="card">
         <h1 className="title">GOOGLE AUTHENTICATOR</h1>
         <p className="subtitle">Welcome, {username}</p>
-        
-        {setupComplete && timeLeft > 0 && (
-          <div style={{ 
-            textAlign: 'center', 
-            marginBottom: '15px',
-            fontSize: '13px',
-            color: '#64748b'
-          }}>
-            QR expires in: {formatTime(timeLeft)}
+
+        <div style={{ marginBottom: 20 }}>
+          <p style={{ fontWeight: 'bold', marginBottom: 6 }}>
+            Scan this QR code with Google Authenticator
+          </p>
+          <div style={{ textAlign: 'center' }}>
+            {qrCode && (
+              <img src={qrCode} alt="QR Code" style={{ width: 200, height: 200 }} />
+            )}
+          </div>
+        </div>
+
+        {secret && (
+          <div style={{ marginBottom: 20 }}>
+            <p style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>
+              Can't scan? Enter this code manually:
+            </p>
+            <div
+              style={{
+                backgroundColor: '#fef3c7',
+                padding: '10px 14px',
+                borderRadius: 6,
+                fontFamily: 'monospace',
+                fontSize: 14,
+                fontWeight: 'bold',
+                letterSpacing: 2,
+                textAlign: 'center',
+              }}
+            >
+              {secret}
+            </div>
           </div>
         )}
 
-        <div style={{ textAlign: 'center', margin: '20px 0' }}>
-          {qrCode ? (
-            <img 
-              src={qrCode} 
-              alt="QR Code" 
-              style={{ 
-                width: '180px', 
-                height: '180px', 
-                margin: '0 auto',
-                border: '1px solid #e2e8f0',
-                borderRadius: '10px',
-                padding: '10px'
-              }} 
-            />
-          ) : (
-            <div style={{ 
-              width: '180px', 
-              height: '180px', 
-              margin: '0 auto',
-              backgroundColor: '#f8fafc',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '10px'
-            }}>
-              Loading...
-            </div>
-          )}
-        </div>
-
-        <div style={{ textAlign: 'center', margin: '15px 0' }}>
-          <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '5px' }}>Manual entry code:</p>
-          <div style={{ 
-            backgroundColor: '#f8fafc', 
-            padding: '8px', 
-            borderRadius: '6px',
-            fontFamily: 'monospace',
-            fontSize: '13px',
-            wordBreak: 'break-all'
-          }}>
-            {secret}
-          </div>
-        </div>
-
-        <div style={{ margin: '20px 0' }}>
+        <div style={{ marginBottom: 20 }}>
+          <p style={{ fontWeight: 'bold', marginBottom: 6 }}>
+            Enter the 6-digit code from Google Authenticator
+          </p>
           <input
             type="text"
+            inputMode="numeric"
             value={token}
-            onChange={e => setToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            onChange={(e) => setToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
             placeholder="000000"
             maxLength="6"
-            disabled={isVerifying || !setupComplete}
+            disabled={isVerifying}
+            autoFocus
             style={{
               width: '100%',
               textAlign: 'center',
-              letterSpacing: '8px',
-              fontSize: '28px',
+              letterSpacing: 10,
+              fontSize: 28,
               fontWeight: 'bold',
               fontFamily: 'monospace',
               padding: '12px',
               border: '2px solid #e2e8f0',
-              borderRadius: '10px'
+              borderRadius: 10,
             }}
           />
         </div>
 
-        <button 
-          className="login-btn" 
+        <button
+          className="login-btn"
           onClick={verifyAndEnable}
-          disabled={isVerifying || token.length !== 6 || !setupComplete}
-          style={{ marginTop: '20px' }}
+          disabled={isVerifying || token.length !== 6}
         >
           {isVerifying ? 'Verifying...' : 'VERIFY & ENABLE'}
         </button>
 
-        <button 
-          className="back-btn" 
+        <button
+          className="back-btn"
           onClick={() => navigate('/otp-method', { state: { userId, username } })}
-          style={{ marginTop: '10px' }}
-          disabled={isVerifying}
+          style={{ marginTop: 10 }}
         >
           BACK
         </button>
