@@ -6,7 +6,6 @@ exports.login = async (req, res) => {
     const { username, password } = req.body;
     console.log("Login attempt:", username);
 
-    // Get user with login attempts info
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
@@ -17,27 +16,14 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials!" });
     }
 
-    // Check if account is locked
-    if (user.account_locked) {
-      return res.status(401).json({ 
-        message: "Account is locked. Please contact administrator to unlock your account.",
-        accountLocked: true 
-      });
-    }
-
-    // Verify password - Check if it's hashed or plain text
     let isPasswordValid = false;
     
     try {
-      // Check if password looks like a bcrypt hash (starts with $2b$)
       if (user.password && user.password.startsWith('$2b$')) {
-        // Password is hashed - use bcrypt compare
         isPasswordValid = await bcrypt.compare(password, user.password);
       } else {
-        // Password is plain text - direct comparison
         isPasswordValid = (password === user.password);
         
-        // If valid, update to hashed password for security
         if (isPasswordValid) {
           const salt = await bcrypt.genSalt(10);
           const hashedPassword = await bcrypt.hash(password, salt);
@@ -54,28 +40,40 @@ exports.login = async (req, res) => {
     }
     
     if (!isPasswordValid) {
-      // Increment login attempts
-      const newAttempts = (user.login_attempts || 0) + 1;
+      const currentAttempts = user.login_attempts || 0;
       
-      // Check if account should be locked (after 3 attempts)
-      if (newAttempts >= 3) {
-        // Lock the account
+      // Check if account is locked in database (for 4th attempt and beyond)
+      if (user.account_locked) {
+        return res.status(401).json({ 
+          message: "Your account has been locked due to too many failed attempts. Please contact the administrator to unlock your account.",
+          accountLocked: true,
+          attemptsRemaining: 0
+        });
+      }
+      
+      const newAttempts = currentAttempts + 1;
+      
+      if (newAttempts === 3) {
+        // 3rd attempt - update attempts to 3 AND lock the account in DB
+        // But show "0 attempts remaining" message (not locked message yet)
         await supabase
           .from('users')
           .update({ 
             login_attempts: newAttempts,
-            account_locked: true,
+            account_locked: true,  // Lock in database
             locked_until: new Date()
           })
           .eq('id', user.id);
         
         return res.status(401).json({ 
-          message: "Account has been locked due to too many failed attempts. Please contact administrator.",
-          accountLocked: true,
-          attemptsRemaining: 0
+          message: "You have 0 attempt(s) remaining!",
+          attemptsRemaining: 0,
+          accountLocked: false,  // Don't show locked message to user yet
+          isThirdAttempt: true
         });
-      } else {
-        // Update attempts count
+      } 
+      else if (newAttempts < 3) {
+        // 1st and 2nd attempts
         await supabase
           .from('users')
           .update({ login_attempts: newAttempts })
@@ -84,12 +82,21 @@ exports.login = async (req, res) => {
         const remainingAttempts = 3 - newAttempts;
         return res.status(401).json({ 
           message: `Invalid credentials! You have ${remainingAttempts} attempt(s) remaining before your account is locked.`,
-          attemptsRemaining: remainingAttempts
+          attemptsRemaining: remainingAttempts,
+          accountLocked: false
+        });
+      }
+      else {
+        // This should not happen because account_locked check above handles it
+        return res.status(401).json({ 
+          message: "Your account has been locked due to too many failed attempts. Please contact the administrator to unlock your account.",
+          accountLocked: true,
+          attemptsRemaining: 0
         });
       }
     }
 
-    // Successful login - reset attempts
+    // Successful login - reset attempts and unlock account
     await supabase
       .from('users')
       .update({ 
@@ -171,7 +178,7 @@ exports.register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user object - matching your database schema
+    // Create new user object
     const newUser = {
       username: username,
       email: email,
@@ -193,7 +200,6 @@ exports.register = async (req, res) => {
     if (insertError) {
       console.error("Insert error details:", insertError);
       
-      // Handle duplicate key errors
       if (insertError.code === '23505') {
         if (insertError.message.includes('username')) {
           return res.status(400).json({ message: 'Username already exists' });
@@ -232,7 +238,6 @@ exports.getLockedAccounts = async (req, res) => {
   try {
     const { adminUsername } = req.query;
 
-    // Verify admin is 'jalgorithm'
     if (adminUsername !== 'jalgorithm') {
       return res.status(403).json({ 
         message: 'Unauthorized. Only jalgorithm can access this resource.' 
@@ -263,14 +268,12 @@ exports.unlockAccount = async (req, res) => {
     const { userId } = req.params;
     const { adminUsername } = req.body;
 
-    // Verify admin is 'jalgorithm'
     if (adminUsername !== 'jalgorithm') {
       return res.status(403).json({ 
         message: 'Unauthorized. Only jalgorithm can unlock accounts.' 
       });
     }
 
-    // Get user to unlock
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('username')
@@ -281,12 +284,10 @@ exports.unlockAccount = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Don't allow unlocking admin account
     if (user.username === 'jalgorithm') {
       return res.status(403).json({ message: 'Cannot unlock admin account' });
     }
 
-    // Unlock the user account
     const { data: updatedUser, error } = await supabase
       .from('users')
       .update({ 
@@ -318,7 +319,6 @@ exports.getAllUsers = async (req, res) => {
   try {
     const { adminUsername } = req.query;
 
-    // Verify admin is 'jalgorithm'
     if (adminUsername !== 'jalgorithm') {
       return res.status(403).json({ 
         message: 'Unauthorized. Only jalgorithm can access this resource.' 

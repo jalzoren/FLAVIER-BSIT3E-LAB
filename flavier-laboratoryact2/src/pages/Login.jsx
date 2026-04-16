@@ -115,27 +115,69 @@ function Login() {
       const errorMessage = err.response?.data?.message || 'Invalid credentials. Please try again!';
       const accountLocked = err.response?.data?.accountLocked;
       const attemptsRemaining = err.response?.data?.attemptsRemaining;
+      const isThirdAttempt = err.response?.data?.isThirdAttempt;
       
-      if (accountLocked) {
+      // Handle 3rd attempt - account gets locked
+      if (isThirdAttempt && accountLocked) {
         Swal.fire({
-          ...swalConfig.error,
+          icon: 'error',
           title: 'Account Locked',
-          text: errorMessage,
-          confirmButtonText: 'Contact Administrator'
+          text: 'You have used all 3 attempts. Your account has been locked. Please contact the administrator to unlock your account.',
+          confirmButtonText: 'Contact Administrator',
+          confirmButtonColor: '#d33'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            Swal.fire({
+              icon: 'info',
+              title: 'Contact Administrator',
+              html: 'Please contact JALGORITHM to unlock your account.',
+              confirmButtonText: 'OK',
+              confirmButtonColor: '#3085d6'
+            });
+          }
         });
-      } else if (attemptsRemaining !== undefined) {
+        setPassword('');
+      }
+      // Handle Account Locked (4th attempt and beyond)
+      else if (accountLocked && !isThirdAttempt) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Account Locked',
+          text: 'Your account has been locked due to too many failed attempts. Please contact the administrator to unlock your account.',
+          confirmButtonText: 'Contact Administrator',
+          confirmButtonColor: '#d33',
+          allowOutsideClick: false
+        }).then((result) => {
+          if (result.isConfirmed) {
+            Swal.fire({
+              icon: 'info',
+              title: 'Contact Administrator',
+              html: 'Please contact JALGORITHM to unlock your account.',
+              confirmButtonText: 'OK',
+              confirmButtonColor: '#3085d6'
+            });
+          }
+        });
+        setPassword('');
+      } 
+      // Handle remaining attempts (1st and 2nd attempt)
+      else if (attemptsRemaining !== undefined && attemptsRemaining > 0) {
         Swal.fire({
           ...swalConfig.warning,
           title: 'Login Failed',
           text: errorMessage,
           confirmButtonText: 'Try Again'
         });
-      } else {
+        setPassword('');
+      } 
+      // Handle other errors
+      else {
         Swal.fire({
           ...swalConfig.error,
           title: 'Login Failed',
           text: errorMessage
         });
+        setPassword('');
       }
     }
   };

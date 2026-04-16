@@ -1,4 +1,4 @@
-/* AdminDashboard.css - Corporate Minimalist Design */
+/* AdminDashboard.css - Corporate Minimalist Design (Fully Responsive) */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
 :root {
@@ -39,10 +39,10 @@ body {
   min-height: 100vh;
   padding: 20px;
   position: relative;
-  width: 1200px;
+  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
 }
-
 
 /* Logout Button */
 .corp-logout-btn {
@@ -75,7 +75,7 @@ body {
 
 /* Main Wrapper */
 .corp-main-wrapper {
-  max-width: 1400px;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -96,6 +96,8 @@ body {
   justify-content: space-between;
   align-items: center;
   background: white;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .corp-title-section h1 {
@@ -106,6 +108,7 @@ body {
   align-items: center;
   gap: 10px;
   margin-bottom: 4px;
+  flex-wrap: wrap;
 }
 
 .corp-title-section p {
@@ -131,6 +134,7 @@ body {
   display: flex;
   gap: 8px;
   background: white;
+  flex-wrap: wrap;
 }
 
 .corp-tab {
@@ -148,6 +152,7 @@ body {
   font-family: "Inter", sans-serif;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
+  white-space: nowrap;
 }
 
 .corp-tab:hover {
@@ -177,11 +182,13 @@ body {
   overflow-x: auto;
   border-radius: 8px;
   border: 1px solid var(--gray-200);
+  -webkit-overflow-scrolling: touch;
 }
 
 .corp-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 600px;
 }
 
 .corp-table thead {
@@ -227,6 +234,7 @@ body {
   border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .corp-badge-locked {
@@ -259,6 +267,7 @@ body {
   font-weight: 500;
   transition: all 0.2s;
   font-family: "Inter", sans-serif;
+  white-space: nowrap;
 }
 
 .corp-unlock-btn:hover {
@@ -316,8 +325,6 @@ body {
   color: var(--gray-400);
 }
 
-
-
 .corp-spinner {
   width: 40px;
   height: 40px;
@@ -358,6 +365,7 @@ body {
   justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.2s;
+  padding: 16px;
 }
 
 @keyframes fadeIn {
@@ -392,6 +400,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .corp-modal-header h2 {
@@ -427,6 +437,8 @@ body {
   align-items: center;
   padding: 12px 0;
   border-bottom: 1px solid var(--gray-100);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .corp-detail-row span {
@@ -438,31 +450,92 @@ body {
 .corp-detail-row strong {
   font-size: 13px;
   color: var(--gray-700);
+  word-break: break-word;
+  text-align: right;
 }
 
 .corp-warning {
   color: var(--warning) !important;
 }
 
-/* Responsive */
+/* Responsive Design - Tablet */
+@media (max-width: 1024px) {
+  .corp-admin-container {
+    padding: 16px;
+  }
+  
+  .corp-header {
+    padding: 20px 24px;
+  }
+  
+  .corp-tabs {
+    padding: 0 24px;
+  }
+  
+  .corp-content {
+    padding: 24px;
+  }
+  
+  .corp-table th,
+  .corp-table td {
+    padding: 10px 14px;
+  }
+}
+
+/* Responsive Design - Mobile Landscape */
 @media (max-width: 768px) {
-  .corp-main-wrapper {
-    padding: 60px 16px 16px 16px;
+  .corp-admin-container {
+    padding: 12px;
+  }
+  
+  .corp-logout-btn {
+    top: 10px;
+    right: 10px;
+    padding: 6px 16px;
+    font-size: 12px;
   }
   
   .corp-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
-    padding: 20px;
+    padding: 16px 20px;
+  }
+  
+  .corp-title-section h1 {
+    font-size: 20px;
+  }
+  
+  .corp-title-section p {
+    font-size: 12px;
+  }
+  
+  .corp-admin-name {
+    font-size: 12px;
+    padding: 4px 10px;
   }
   
   .corp-tabs {
     padding: 0 20px;
+    gap: 4px;
+  }
+  
+  .corp-tab {
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+  
+  .corp-tab span:first-child {
+    font-size: 14px;
   }
   
   .corp-content {
     padding: 20px;
+  }
+  
+  .corp-section h2 {
+    font-size: 16px;
+    margin-bottom: 16px;
   }
   
   .corp-table th,
@@ -471,29 +544,268 @@ body {
     font-size: 12px;
   }
   
-  .corp-tab {
-    padding: 10px 16px;
-    font-size: 13px;
+  .corp-badge {
+    padding: 3px 8px;
+    font-size: 10px;
   }
   
-  .corp-title-section h1 {
-    font-size: 20px;
+  .corp-unlock-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+  
+  .corp-empty {
+    padding: 40px 16px;
+  }
+  
+  .corp-empty-icon {
+    font-size: 48px;
+  }
+  
+  .corp-empty p {
+    font-size: 14px;
+  }
+  
+  .corp-footer {
+    padding: 12px 20px;
+  }
+  
+  .corp-modal-header {
+    padding: 16px 20px;
+  }
+  
+  .corp-modal-header h2 {
+    font-size: 16px;
+  }
+  
+  .corp-modal-body {
+    padding: 20px;
+  }
+  
+  .corp-detail-row {
+    padding: 10px 0;
+  }
+  
+  .corp-detail-row span,
+  .corp-detail-row strong {
+    font-size: 12px;
   }
 }
 
-@media (max-width: 640px) {
-  .corp-table-wrapper {
-    overflow-x: auto;
-  }
-  
-  .corp-table {
-    min-width: 600px;
+/* Responsive Design - Mobile Portrait */
+@media (max-width: 480px) {
+  .corp-admin-container {
+    padding: 8px;
   }
   
   .corp-logout-btn {
-    top: 10px;
-    right: 10px;
-    padding: 6px 16px;
+    top: 8px;
+    right: 8px;
+    padding: 5px 12px;
+    font-size: 11px;
+  }
+  
+  .corp-logout-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .corp-header {
+    padding: 12px 16px;
+  }
+  
+  .corp-title-section h1 {
+    font-size: 18px;
+  }
+  
+  .corp-title-section h1 svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .corp-tabs {
+    padding: 0 16px;
+  }
+  
+  .corp-tab {
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+  
+  .corp-tab span:first-child {
     font-size: 12px;
+  }
+  
+  .corp-content {
+    padding: 16px;
+  }
+  
+  .corp-section h2 {
+    font-size: 15px;
+  }
+  
+  .corp-table-wrapper {
+    border-radius: 6px;
+  }
+  
+  .corp-table th,
+  .corp-table td {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  
+  .corp-table th {
+    font-size: 10px;
+  }
+  
+  .corp-badge {
+    padding: 2px 6px;
+    font-size: 9px;
+    gap: 4px;
+  }
+  
+  .corp-badge svg {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .corp-unlock-btn {
+    padding: 3px 8px;
+    font-size: 10px;
+    gap: 4px;
+  }
+  
+  .corp-unlock-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .corp-unlock-btn-full {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .corp-empty {
+    padding: 30px 12px;
+  }
+  
+  .corp-empty-icon {
+    font-size: 40px;
+  }
+  
+  .corp-empty p {
+    font-size: 13px;
+  }
+  
+  .corp-empty span {
+    font-size: 11px;
+  }
+  
+  .corp-footer {
+    padding: 10px 16px;
+  }
+  
+  .corp-footer p {
+    font-size: 10px;
+  }
+  
+  .corp-modal-content {
+    width: 95%;
+    max-height: 85vh;
+  }
+  
+  .corp-modal-header {
+    padding: 12px 16px;
+  }
+  
+  .corp-modal-header h2 {
+    font-size: 14px;
+  }
+  
+  .corp-modal-body {
+    padding: 16px;
+  }
+  
+  .corp-detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .corp-detail-row strong {
+    text-align: left;
+  }
+}
+
+/* Small Mobile Devices */
+@media (max-width: 360px) {
+  .corp-tab {
+    padding: 6px 10px;
+    font-size: 10px;
+  }
+  
+  .corp-tab span:first-child {
+    font-size: 10px;
+  }
+  
+  .corp-table th,
+  .corp-table td {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  
+  .corp-title-section h1 {
+    font-size: 16px;
+  }
+  
+  .corp-unlock-btn {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .corp-tab,
+  .corp-unlock-btn,
+  .corp-unlock-btn-full,
+  .corp-logout-btn {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .corp-tab:active,
+  .corp-unlock-btn:active,
+  .corp-unlock-btn-full:active {
+    opacity: 0.7;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .corp-logout-btn,
+  .corp-unlock-btn,
+  .corp-unlock-btn-full {
+    display: none;
+  }
+  
+  .corp-admin-container {
+    padding: 0;
+  }
+  
+  .corp-dashboard-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+}
+
+/* Accessibility - Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
