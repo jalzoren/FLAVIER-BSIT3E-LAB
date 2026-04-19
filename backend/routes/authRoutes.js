@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 
-// Make sure all these functions exist in your controller
 router.post('/login', authController.login);
 router.post('/register', authController.register);
 router.get('/locked-accounts', authController.getLockedAccounts);

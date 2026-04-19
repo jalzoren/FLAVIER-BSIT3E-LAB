@@ -25,14 +25,12 @@ exports.sendEmailOTP = async (req, res) => {
     const otp = otpService.generateOTP();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
     
-    // Delete old OTPs
     await supabase
       .from('otp_store')
       .delete()
       .eq('user_id', userId)
       .eq('type', 'email');
     
-    // Store new OTP
     const { error: insertError } = await supabase
       .from('otp_store')
       .insert({
@@ -47,7 +45,6 @@ exports.sendEmailOTP = async (req, res) => {
       return res.status(500).json({ message: "Failed to store OTP" });
     }
 
-    // Send email
     const emailSent = await emailService.sendOtpEmail(user.email, otp);
     
     if (!emailSent) {
@@ -59,7 +56,7 @@ exports.sendEmailOTP = async (req, res) => {
     res.json({ 
       message: "OTP sent successfully",
       userId: userId,
-      otp: otp // Remove this in production, just for testing
+      otp: otp 
     });
     
   } catch (err) {
@@ -165,14 +162,12 @@ exports.resendOTP = async (req, res) => {
     const otp = otpService.generateOTP();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
     
-    // Delete old OTPs
     await supabase
       .from('otp_store')
       .delete()
       .eq('user_id', userId)
       .eq('type', 'email');
     
-    // Store new OTP
     const { error: insertError } = await supabase
       .from('otp_store')
       .insert({
@@ -186,7 +181,6 @@ exports.resendOTP = async (req, res) => {
       return res.status(500).json({ message: "Failed to store OTP" });
     }
 
-    // Send email
     await emailService.sendOtpEmail(user.email, otp);
     
     console.log(`[RESEND OTP] ✅ Sent to ${user.email}: ${otp}`);

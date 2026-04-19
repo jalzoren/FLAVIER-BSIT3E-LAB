@@ -42,7 +42,6 @@ exports.login = async (req, res) => {
     if (!isPasswordValid) {
       const currentAttempts = user.login_attempts || 0;
       
-      // Check if account is locked in database (for 4th attempt and beyond)
       if (user.account_locked) {
         return res.status(401).json({ 
           message: "Your account has been locked due to too many failed attempts. Please contact the administrator to unlock your account.",
@@ -54,13 +53,12 @@ exports.login = async (req, res) => {
       const newAttempts = currentAttempts + 1;
       
       if (newAttempts === 3) {
-        // 3rd attempt - update attempts to 3 AND lock the account in DB
-        // But show "0 attempts remaining" message (not locked message yet)
+
         await supabase
           .from('users')
           .update({ 
             login_attempts: newAttempts,
-            account_locked: true,  // Lock in database
+            account_locked: true,  
             locked_until: new Date()
           })
           .eq('id', user.id);
@@ -68,12 +66,11 @@ exports.login = async (req, res) => {
         return res.status(401).json({ 
           message: "You have 0 attempt(s) remaining!",
           attemptsRemaining: 0,
-          accountLocked: false,  // Don't show locked message to user yet
+          accountLocked: false, 
           isThirdAttempt: true
         });
       } 
       else if (newAttempts < 3) {
-        // 1st and 2nd attempts
         await supabase
           .from('users')
           .update({ login_attempts: newAttempts })
@@ -87,7 +84,6 @@ exports.login = async (req, res) => {
         });
       }
       else {
-        // This should not happen because account_locked check above handles it
         return res.status(401).json({ 
           message: "Your account has been locked due to too many failed attempts. Please contact the administrator to unlock your account.",
           accountLocked: true,
@@ -96,7 +92,6 @@ exports.login = async (req, res) => {
       }
     }
 
-    // Successful login - reset attempts and unlock account
     await supabase
       .from('users')
       .update({ 
@@ -122,29 +117,24 @@ exports.login = async (req, res) => {
   }
 };
 
-// REGISTER FUNCTION - FIXED
 exports.register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
     console.log("Registration attempt:", username, email);
 
-    // Validate required fields
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Validate username length
     if (username.length < 3) {
       return res.status(400).json({ message: 'Username must be at least 3 characters long' });
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ message: 'Invalid email format' });
     }
 
-    // Validate password complexity
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
     if (!passwordRegex.test(password)) {
       return res.status(400).json({ 
@@ -152,7 +142,6 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Check if username already exists
     const { data: existingUsername } = await supabase
       .from('users')
       .select('username')
@@ -163,7 +152,6 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'Username already exists' });
     }
 
-    // Check if email already exists
     const { data: existingEmail } = await supabase
       .from('users')
       .select('email')
@@ -174,11 +162,9 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user object
     const newUser = {
       username: username,
       email: email,
@@ -190,7 +176,6 @@ exports.register = async (req, res) => {
       account_locked: false
     };
 
-    // Insert new user
     const { data: createdUser, error: insertError } = await supabase
       .from('users')
       .insert([newUser])
@@ -233,7 +218,6 @@ exports.register = async (req, res) => {
   }
 };
 
-// Get locked accounts (Only for jalgorithm)
 exports.getLockedAccounts = async (req, res) => {
   try {
     const { adminUsername } = req.query;
@@ -262,7 +246,6 @@ exports.getLockedAccounts = async (req, res) => {
   }
 };
 
-// Unlock account (Only for jalgorithm)
 exports.unlockAccount = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -314,7 +297,6 @@ exports.unlockAccount = async (req, res) => {
   }
 };
 
-// Get all users (Only for jalgorithm)
 exports.getAllUsers = async (req, res) => {
   try {
     const { adminUsername } = req.query;
@@ -343,7 +325,7 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// Check password strength
+// password strength
 exports.checkPasswordStrength = async (req, res) => {
   try {
     const { password } = req.body;

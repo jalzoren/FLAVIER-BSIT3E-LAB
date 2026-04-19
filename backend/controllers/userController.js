@@ -5,7 +5,6 @@ exports.getUserByUsername = async (req, res) => {
     const { username } = req.params;
     console.log(`Fetching user data for: ${username}`);
 
-    // Get user from users table
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('id, username')
@@ -16,15 +15,13 @@ exports.getUserByUsername = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Get user details from user_details table
     const { data: userDetails, error: detailsError } = await supabase
       .from('user_details')
       .select('*')
       .eq('user_id', user.id)
       .single();
 
-    // Get profile image from storage bucket if exists
-    let profileImageUrl = "/WONN.jpg"; // Default image
+    let profileImageUrl = "/WONN.jpg";
     
     if (userDetails?.profile_image_path) {
       try {
@@ -42,7 +39,6 @@ exports.getUserByUsername = async (req, res) => {
       profileImageUrl = userDetails.profile_image;
     }
 
-    // Return user details (different for each user based on database)
     res.json({
       name: userDetails?.name || username,
       dateOfIssue: userDetails?.date_of_issue || "2026-03-20",
