@@ -118,7 +118,7 @@ Backend:
 ```bash
 cd backend
 npm install
-npm run dev
+node server.js
 
 cd flavier-laboratoryact2
 npm install
