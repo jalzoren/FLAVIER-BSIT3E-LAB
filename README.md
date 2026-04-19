@@ -47,126 +47,82 @@ Database & Authentication: Supabase (PostgreSQL + Auth)
 ---
 
 ## Project Structure
+FLAVIER-BSIT3E-LAB2ACTOTP/
+│
+├── backend/
+│ ├── config/
+│ │ └── supabase.js
+│ ├── controllers/
+│ │ ├── authController.js
+│ │ ├── googleAuthController.js
+│ │ ├── otpController.js
+│ │ └── userController.js
+│ ├── middleware/
+│ │ └── errorHandler.js
+│ ├── models/
+│ ├── routes/
+│ │ ├── authRoutes.js
+│ │ ├── googleAuthRoutes.js
+│ │ ├── otpRoutes.js
+│ │ └── userRoutes.js
+│ ├── services/
+│ │ ├── emailService.js
+│ │ └── otpService.js
+│ ├── utils/
+│ ├── server.js
+│ ├── package.json
+│ └── package-lock.json
+│
+├── flavier-laboratoryact2/
+│ ├── public/
+│ │ ├── HANNI.jpg
+│ │ ├── mjtan.jpg
+│ │ ├── WONN.jpg
+│ │ └── vite.svg
+│ ├── src/
+│ │ ├── assets/
+│ │ ├── components/
+│ │ ├── css/
+│ │ │ ├── AdminDashboard.css
+│ │ │ ├── Auth.css
+│ │ │ └── Home.css
+│ │ ├── pages/
+│ │ │ ├── AdminDashboard.jsx
+│ │ │ ├── GoogleAuthDirect.jsx
+│ │ │ ├── GoogleAuthSetup.jsx
+│ │ │ ├── Home.jsx
+│ │ │ ├── Login.jsx
+│ │ │ ├── OTPMethod.jsx
+│ │ │ ├── Register.jsx
+│ │ │ └── VerifyOTP.jsx
+│ │ ├── App.jsx
+│ │ ├── main.jsx
+│ │ ├── App.css
+│ │ └── index.css
+│ ├── index.html
+│ ├── vite.config.js
+│ ├── package.json
+│ ├── package-lock.json
+│ └── eslint.config.js
+│
+└── README.md
 
-```
-FLAVIER-BSIT3E-LAB2ACTOTP
-├─ backend
-│  ├─ config
-│  │  └─ supabase.js
-│  ├─ controllers
-│  │  ├─ authController.js
-│  │  ├─ googleAuthController.js
-│  │  ├─ otpController.js
-│  │  └─ userController.js
-│  ├─ middleware
-│  │  └─ errorHandler.js
-│  ├─ models
-│  ├─ package-lock.json
-│  ├─ package.json
-│  ├─ routes
-│  │  ├─ authRoutes.js
-│  │  ├─ googleAuthRoutes.js
-│  │  ├─ otpRoutes.js
-│  │  └─ userRoutes.js
-│  ├─ server.js
-│  ├─ services
-│  │  ├─ emailService.js
-│  │  └─ otpService.js
-│  └─ utils
-├─ flavier-laboratoryact2
-│  ├─ eslint.config.js
-│  ├─ index.html
-│  ├─ package-lock.json
-│  ├─ package.json
-│  ├─ public
-│  │  ├─ HANNI.jpg
-│  │  ├─ mjtan.jpg
-│  │  ├─ vite.svg
-│  │  └─ WONN.jpg
-│  ├─ README.md
-│  ├─ src
-│  │  ├─ App.css
-│  │  ├─ App.jsx
-│  │  ├─ assets
-│  │  │  └─ react.svg
-│  │  ├─ components
-│  │  ├─ css
-│  │  │  ├─ AdminDashboard.css
-│  │  │  ├─ Auth.css
-│  │  │  └─ Home.css
-│  │  ├─ index.css
-│  │  ├─ main.jsx
-│  │  └─ pages
-│  │     ├─ AdminDashboard.jsx
-│  │     ├─ GoogleAuthDirect.jsx
-│  │     ├─ GoogleAuthSetup.jsx
-│  │     ├─ Home.jsx
-│  │     ├─ Login.jsx
-│  │     ├─ OTPMethod.jsx
-│  │     ├─ Register.jsx
-│  │     └─ VerifyOTP.jsx
-│  └─ vite.config.js
-└─ README.md
 
-```
-```
-FLAVIER-BSIT3E-LAB2ACTOTP
-├─ backend
-│  ├─ config
-│  │  └─ supabase.js
-│  ├─ controllers
-│  │  ├─ authController.js
-│  │  ├─ googleAuthController.js
-│  │  ├─ otpController.js
-│  │  └─ userController.js
-│  ├─ middleware
-│  │  └─ errorHandler.js
-│  ├─ models
-│  ├─ package-lock.json
-│  ├─ package.json
-│  ├─ routes
-│  │  ├─ authRoutes.js
-│  │  ├─ googleAuthRoutes.js
-│  │  ├─ otpRoutes.js
-│  │  └─ userRoutes.js
-│  ├─ server.js
-│  ├─ services
-│  │  ├─ emailService.js
-│  │  └─ otpService.js
-│  └─ utils
-├─ flavier-laboratoryact2
-│  ├─ eslint.config.js
-│  ├─ index.html
-│  ├─ package-lock.json
-│  ├─ package.json
-│  ├─ public
-│  │  ├─ HANNI.jpg
-│  │  ├─ mjtan.jpg
-│  │  ├─ vite.svg
-│  │  └─ WONN.jpg
-│  ├─ README.md
-│  ├─ src
-│  │  ├─ App.css
-│  │  ├─ App.jsx
-│  │  ├─ assets
-│  │  │  └─ react.svg
-│  │  ├─ components
-│  │  ├─ css
-│  │  │  ├─ AdminDashboard.css
-│  │  │  ├─ Auth.css
-│  │  │  └─ Home.css
-│  │  ├─ index.css
-│  │  ├─ main.jsx
-│  │  └─ pages
-│  │     ├─ AdminDashboard.jsx
-│  │     ├─ GoogleAuthDirect.jsx
-│  │     ├─ GoogleAuthSetup.jsx
-│  │     ├─ Home.jsx
-│  │     ├─ Login.jsx
-│  │     ├─ OTPMethod.jsx
-│  │     ├─ Register.jsx
-│  │     └─ VerifyOTP.jsx
-│  └─ vite.config.js
-└─ README.md
 
-```
+---
+
+## Installation
+
+Backend:
+```bash
+cd backend
+npm install
+npm run dev
+
+cd flavier-laboratoryact2
+npm install
+npm run dev
+
+
+
+
