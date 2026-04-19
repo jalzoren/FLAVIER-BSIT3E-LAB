@@ -47,7 +47,7 @@ Database & Authentication: Supabase (PostgreSQL + Auth)
 ---
 
 ## Project Structure
-FLAVIER-BSIT3E-LAB2ACTOTP/
+FLAVIER-BSIT3E-LAB2ACTOTP/<br>
 │
 ├── backend/
 │ ├── config/
