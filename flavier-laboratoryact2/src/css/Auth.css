@@ -420,7 +420,6 @@ input::placeholder {
 .password-toggle-btn:hover::before {
   background-color: rgba(102, 126, 234, 0.1);
 }
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap");
 
 * {
   margin: 0;

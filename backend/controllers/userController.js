@@ -5,6 +5,7 @@ exports.getUserByUsername = async (req, res) => {
     const { username } = req.params;
     console.log(`Fetching user data for: ${username}`);
 
+    // Get user from users table
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('id, username')
@@ -15,31 +16,40 @@ exports.getUserByUsername = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // Get user details from user_details table
     const { data: userDetails, error: detailsError } = await supabase
       .from('user_details')
       .select('*')
       .eq('user_id', user.id)
       .single();
 
-    if (detailsError && !userDetails) {
-      // Return default details if not found
-      return res.json({
-        name: username,
-        dateOfIssue: "2026-03-20",
-        location: "BSIT3E",
-        whatILike: "COFFEE",
-        memberOf: "정보기술\nInformation Technology",
-        profileImage: "/WONN.jpg"
-      });
+    // Get profile image from storage bucket if exists
+    let profileImageUrl = "/WONN.jpg"; // Default image
+    
+    if (userDetails?.profile_image_path) {
+      try {
+        const { data: publicUrl } = supabase
+          .storage
+          .from('profiles')
+          .getPublicUrl(userDetails.profile_image_path);
+        
+        profileImageUrl = publicUrl.publicUrl;
+      } catch (err) {
+        console.error("Error getting image URL:", err);
+        profileImageUrl = userDetails?.profile_image || "/WONN.jpg";
+      }
+    } else if (userDetails?.profile_image) {
+      profileImageUrl = userDetails.profile_image;
     }
 
+    // Return user details (different for each user based on database)
     res.json({
       name: userDetails?.name || username,
-      dateOfIssue: userDetails?.date_of_issue,
-      location: userDetails?.location,
-      whatILike: userDetails?.what_i_like,
-      memberOf: userDetails?.member_of,
-      profileImage: userDetails?.profile_image
+      dateOfIssue: userDetails?.date_of_issue || "2026-03-20",
+      location: userDetails?.location || "BSIT3E",
+      whatILike: userDetails?.what_i_like || "COFFEE",
+      memberOf: userDetails?.member_of || "정보기술\nInformation Technology",
+      profileImage: profileImageUrl
     });
     
   } catch (err) {

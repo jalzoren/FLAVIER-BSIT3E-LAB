@@ -139,8 +139,9 @@ function AdminDashboard() {
       showCancelButton: true,
       confirmButtonColor: '#10b981',
       cancelButtonColor: '#ef4444',
-      confirmButtonText: 'Yes, unlock it!',
-      cancelButtonText: 'Cancel'
+      cancelButtonText: 'Cancel',
+            confirmButtonText: 'Yes, unlock it!'
+
     });
 
     if (result.isConfirmed) {
@@ -195,8 +196,9 @@ const handleLogout = () => {
     showCancelButton: true,
     confirmButtonColor: '#ef4444',
     cancelButtonColor: '#64748b',
-    confirmButtonText: 'Yes, logout',
-    cancelButtonText: 'Cancel'
+    cancelButtonText: 'Cancel',
+        confirmButtonText: 'Yes, logout'
+
   }).then((result) => {
     if (result.isConfirmed) {
       navigate('/');
