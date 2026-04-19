@@ -1,4 +1,4 @@
-# FLAVIER-BSIT3E-LAB2ACTOTP
+# FLAVIER-BSIT3E-LABs
 
 A full-stack authentication system built using Node.js, Express, React (Vite), and Supabase.  
 It includes secure authentication features such as email verification, Google OAuth, OTP verification, password complexity enforcement, and account lockout protection with admin control.
