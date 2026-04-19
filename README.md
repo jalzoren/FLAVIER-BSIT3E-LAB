@@ -48,64 +48,65 @@ Database & Authentication: Supabase (PostgreSQL + Auth)
 
 ## Project Structure
 FLAVIER-BSIT3E-LAB2ACTOTP/<br>
-│
-├── backend/
-│ ├── config/
-│ │ └── supabase.js
-│ ├── controllers/
-│ │ ├── authController.js
-│ │ ├── googleAuthController.js
-│ │ ├── otpController.js
-│ │ └── userController.js
-│ ├── middleware/
-│ │ └── errorHandler.js
-│ ├── models/
-│ ├── routes/
-│ │ ├── authRoutes.js
-│ │ ├── googleAuthRoutes.js
-│ │ ├── otpRoutes.js
-│ │ └── userRoutes.js
-│ ├── services/
-│ │ ├── emailService.js
-│ │ └── otpService.js
-│ ├── utils/
-│ ├── server.js
-│ ├── package.json
-│ └── package-lock.json
-│
-├── flavier-laboratoryact2/
-│ ├── public/
-│ │ ├── HANNI.jpg
-│ │ ├── mjtan.jpg
-│ │ ├── WONN.jpg
-│ │ └── vite.svg
-│ ├── src/
-│ │ ├── assets/
-│ │ ├── components/
-│ │ ├── css/
-│ │ │ ├── AdminDashboard.css
-│ │ │ ├── Auth.css
-│ │ │ └── Home.css
-│ │ ├── pages/
-│ │ │ ├── AdminDashboard.jsx
-│ │ │ ├── GoogleAuthDirect.jsx
-│ │ │ ├── GoogleAuthSetup.jsx
-│ │ │ ├── Home.jsx
-│ │ │ ├── Login.jsx
-│ │ │ ├── OTPMethod.jsx
-│ │ │ ├── Register.jsx
-│ │ │ └── VerifyOTP.jsx
-│ │ ├── App.jsx
-│ │ ├── main.jsx
-│ │ ├── App.css
-│ │ └── index.css
-│ ├── index.html
-│ ├── vite.config.js
-│ ├── package.json
-│ ├── package-lock.json
-│ └── eslint.config.js
-│
-└── README.md
+│<br>
+├── backend/<br>
+│ ├── config/<br>
+│ │ └── supabase.js<br>
+│ ├── controllers/<br>
+│ │ ├── authController.js<br>
+│ │ ├── googleAuthController.js<br>
+│ │ ├── otpController.js<br>
+│ │ └── userController.js<br>
+│ ├── middleware/<br>
+│ │ └── errorHandler.js<br>
+│ ├── models/<br>
+│ ├── routes/<br>
+│ │ ├── authRoutes.js<br>
+│ │ ├── googleAuthRoutes.js<br>
+│ │ ├── otpRoutes.js<br>
+│ │ └── userRoutes.js<br>
+│ ├── services/<br>
+│ │ ├── emailService.js<br>
+│ │ └── otpService.js<br>
+│ ├── utils/<br>
+│ ├── server.js<br>
+│ ├── package.json<br>
+│ └── package-lock.json<br>
+│<br>
+├── flavier-laboratoryact2/<br>
+│ ├── public/<br>
+│ │ ├── HANNI.jpg<br>
+│ │ ├── mjtan.jpg<br>
+│ │ ├── WONN.jpg<br>
+│ │ └── vite.svg<br>
+│ ├── src/<br>
+│ │ ├── assets/<br>
+│ │ ├── components/<br>
+│ │ ├── css/<br>
+│ │ │ ├── AdminDashboard.css<br>
+│ │ │ ├── Auth.css<br>
+│ │ │ └── Home.css<br>
+│ │ ├── pages/<br>
+│ │ │ ├── AdminDashboard.jsx<br>
+│ │ │ ├── GoogleAuthDirect.jsx<br>
+│ │ │ ├── GoogleAuthSetup.jsx<br>
+│ │ │ ├── Home.jsx<br>
+│ │ │ ├── Login.jsx<br>
+│ │ │ ├── OTPMethod.jsx<br>
+│ │ │ ├── Register.jsx<br>
+│ │ │ └── VerifyOTP.jsx<br>
+│ │ ├── App.jsx<br>
+│ │ ├── main.jsx<br>
+│ │ ├── App.css<br>
+│ │ └── index.css<br>
+│ ├── index.html<br>
+│ ├── vite.config.js<br>
+│ ├── package.json<br>
+│ ├── package-lock.json<br>
+│ └── eslint.config.js<br>
+│<br>
+└── README.md<br>
+<br>
 
 
 
